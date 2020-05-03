@@ -215,6 +215,16 @@ podhdctrl_handle_events(podhdctrl_ctx *ctx)
 				continue;
 			}
 
+			if (tmp_buf[2] == 1 && ctx->msg_size != 0) {
+				podhdctrl_debug("Dropping incomplete message\n");
+				podhdctrl_reset_message(ctx);
+			}
+
+			if (tmp_buf[2] == 4 && ctx->msg_size == 0) {
+				podhdctrl_debug("Lost head of the message, dropping the rest\n");
+				continue;
+			}
+
 			if ((ctx->msg_size + data_size) > PODHD_MAX_MSG_SIZE) {
 				podhdctrl_debug("Message buffer overflow!\n");
 				podhdctrl_reset_message(ctx);

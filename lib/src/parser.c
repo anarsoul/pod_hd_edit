@@ -175,9 +175,7 @@ podhdctrl_parse_message(podhdctrl_ctx *ctx)
 	podhdctrl_msg *msg;
 	podhdctrl_recv_cb_entry *entry;
 
-	if (ctx->msg_buf[4] == 0x00 &&
-	    ctx->msg_buf[5] == 0x40 &&
-	    ctx->msg_buf[6] == 0x00)
+	if (ctx->msg_buf[5] == 0x40)
 		type = podhdctrl_identify_msg_type(ctx);
 
 	if (ctx->msg_size < 32)
