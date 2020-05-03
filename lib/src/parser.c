@@ -2,9 +2,39 @@
  * Copyright (c) 2020 Vasily Khoruzhick <anarsoul@gmail.com>
  */
 
+#include <endian.h>
+
 #include "list.h"
 #include "podhdctrl.h"
 #include "podhdctrl_int.h"
+
+static float
+podhdctrl_buf_to_float(unsigned char *buf)
+{
+	union {
+		unsigned u;
+		float f;
+	} u;
+
+	memcpy(&u.u, buf, sizeof(u.u));
+	u.u = le32toh(u.u);
+
+	return u.f;
+}
+
+static int
+podhdctrl_buf_to_int(unsigned char *buf)
+{
+	union {
+		unsigned u;
+		int i;
+	} u;
+
+	memcpy(&u.u, buf, sizeof(u.u));
+	u.u = le32toh(u.u);
+
+	return u.i;
+}
 
 bool
 podhdctrl_message_complete(podhdctrl_ctx *ctx)
@@ -66,28 +96,28 @@ podhdctrl_raw_to_msg(podhdctrl_ctx *ctx, podhdctrl_msg *msg)
 	case PODHDCTRL_MSG_PRESET_IDX:
 	{
 		podhdctrl_int_msg *imsg = (podhdctrl_int_msg *)msg;
-		memcpy(&imsg->value, ctx->msg_buf + 8, sizeof(imsg->value));
+		imsg->value = podhdctrl_buf_to_int(ctx->msg_buf + 8);
 		break;
 	}
 
 	case PODHDCTRL_MSG_PEDAL:
 	{
 		podhdctrl_float_idx_msg *fimsg = (podhdctrl_float_idx_msg *)msg;
-		memcpy(&fimsg->index, ctx->msg_buf + 12, sizeof(fimsg->index));
-		memcpy(&fimsg->value, ctx->msg_buf + 16, sizeof(fimsg->value));
+		fimsg->index = podhdctrl_buf_to_int(ctx->msg_buf + 12);
+		fimsg->value = podhdctrl_buf_to_float(ctx->msg_buf + 16);
 		break;
 	}
 	case PODHDCTRL_MSG_PARAM_CHANGED:
 	{
 		podhdctrl_float_idx_msg *fimsg = (podhdctrl_float_idx_msg *)msg;
-		memcpy(&fimsg->index, ctx->msg_buf + 16, sizeof(fimsg->index));
-		memcpy(&fimsg->value, ctx->msg_buf + 20, sizeof(fimsg->value));
+		fimsg->index = podhdctrl_buf_to_int(ctx->msg_buf + 16);
+		fimsg->value = podhdctrl_buf_to_float(ctx->msg_buf + 20);
 		break;
 	}
 	case PODHDCTRL_MSG_EFFECT_STATE:
 	{
 		podhdctrl_effect_state_msg *esmsg = (podhdctrl_effect_state_msg *)msg;
-		memcpy(&esmsg->index, ctx->msg_buf + 12, sizeof(esmsg->index));
+		esmsg->index = podhdctrl_buf_to_int(ctx->msg_buf + 12);
 		esmsg->enabled = ctx->msg_buf[16] ? true : false;
 		break;
 	}
