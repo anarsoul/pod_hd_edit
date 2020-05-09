@@ -3,17 +3,14 @@ qt5_dep = dependency('qt5', modules: ['Core', 'Gui', 'Widgets'])
 inc = include_directories('.')
 
 ui_files = files(
-	'ui/amp.ui',
 	'ui/mainWindow.ui',
 )
 
 gui_moc_headers = files(
-	'amp.h',
 	'mainWindow.h'
 )
 
 gui_src = files(
-	'amp.cpp',
 	'mainWindow.cpp',
 	'main.cpp'
 )
