@@ -5,6 +5,7 @@ podhdctrl_inc = include_directories('include')
 
 files_podhdctrl = files(
 	'include/podhdctrl.h',
+	'include/podhd_preset.h',
 
 	'src/list.h',
 	'src/podhdctrl_int.h',
