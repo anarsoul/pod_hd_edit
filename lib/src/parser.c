@@ -188,40 +188,20 @@ podhdctrl_identify_msg_type(podhdctrl_ctx *ctx)
 	return type;
 }
 
-static void print_buf(unsigned char *buf, ssize_t start, ssize_t size)
-{
-	for (int i = 0; i < size; i += 16) {
-		printf("%.4lx:", i + start);
-		for (int j = i; (j < (i + 16)) && (j < size); j++)
-			printf(" %.2x", buf[j]);
-		printf("\n");
-	}
-}
-
-int
+podhdctrl_msg *
 podhdctrl_parse_message(podhdctrl_ctx *ctx)
 {
 	int type = PODHDCTRL_MSG_RAW;
 	podhdctrl_msg *msg;
-	podhdctrl_recv_cb_entry *entry;
 
 	if (ctx->msg_buf[5] == 0x40)
 		type = podhdctrl_identify_msg_type(ctx);
 
-	if (ctx->msg_size < 32)
-		print_buf(ctx->msg_buf, 0, ctx->msg_size);
-
 	msg = podhdctrl_alloc_msg(type);
 	if (!msg)
-		return PODHDCTRL_NO_MEMORY;
+		return NULL;
 
 	podhdctrl_raw_to_msg(ctx, msg);
 
-	list_for_each_entry(entry, &ctx->recv_cb, list, podhdctrl_recv_cb_entry) {
-		entry->cb(msg, entry->userdata);
-	}
-
-	free(msg);
-
-	return PODHDCTRL_NO_ERROR;
+	return msg;
 }

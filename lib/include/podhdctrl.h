@@ -5,6 +5,10 @@
 #ifndef __PODHDCTRL_H
 #define __PODHDCTRL_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdbool.h>
 #include <sys/types.h>
 #include <poll.h>
@@ -62,8 +66,6 @@ typedef struct podhdctrl_effect_state_msg {
 struct podhdctrl_ctx;
 typedef struct podhdctrl_ctx podhdctrl_ctx;
 
-typedef void (*podhdctrl_recv_cb)(podhdctrl_msg *msg, void *userdata);
-
 /* Initializes the library and opens the device */
 int
 podhdctrl_init(podhdctrl_ctx **ctx, const char *devname);
@@ -76,24 +78,37 @@ podhdctrl_exit(podhdctrl_ctx *ctx);
 int
 podhdctrl_send_raw_msg(podhdctrl_ctx *ctx, unsigned char *buf, int len);
 
-/* Registers receive callback. Duplicate callback won't be registered */
+/* Receives raw message, resets message buffer */
 int
-podhdctrl_register_recv_cb(podhdctrl_ctx *ctx, podhdctrl_recv_cb cb, void *userdata);
+podhdctrl_recv_raw_msg(podhdctrl_ctx *ctx, unsigned char *buf, int buf_len);
 
-/* Unregisters receive callback */
+/* Receives raw message, doesn't reset message buffer */
 int
-podhdctrl_unregister_recv_cb(podhdctrl_ctx *ctx, podhdctrl_recv_cb cb, void *userdata);
+podhdctrl_peek_raw_msg(podhdctrl_ctx *ctx, unsigned char *buf, int buf_len);
 
-/* Reads and processes pending events. Does not block. Callbacks will be
- * called if it completes receiving a message.
- * Should be called in poll loop if FD indicates that there is pending data
- */
+/* Returns parsed message, caller now owns the message, resets message buffer */
+int
+podhdctrl_recv_msg(podhdctrl_ctx *ctx, podhdctrl_msg **msg);
+
 void
+podhdctrl_free_msg(podhdctrl_msg *msg);
+
+/* Reads and processes pending events. Does not block.
+ * Should be called in poll loop if FD indicates that there is pending data
+ *
+ * Returns true when message is ready, caller must call and recv() func in order
+ * to clean message buffer since it holds only one message
+ */
+bool
 podhdctrl_handle_events(podhdctrl_ctx *ctx);
 
 /* Returns poll descriptors */
 int
 podhdctrl_poll_descriptors(podhdctrl_ctx *ctx, struct pollfd *pfds,
 			   unsigned int space);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

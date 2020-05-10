@@ -18,8 +18,18 @@ sighandler(int signo)
 		interrupted  = true;
 }
 
+static void print_buf(unsigned char *buf, ssize_t start, ssize_t size)
+{
+	for (int i = 0; i < size; i += 16) {
+		printf("%.4lx:", i + start);
+		for (int j = i; (j < (i + 16)) && (j < size); j++)
+			printf(" %.2x", buf[j]);
+		printf("\n");
+	}
+}
+
 static void
-recv_cb(podhdctrl_msg *msg, void *userdata)
+handle_message(podhdctrl_msg *msg)
 {
 	switch (msg->type) {
 	case PODHDCTRL_MSG_PRESET_CHANGED:
@@ -100,16 +110,40 @@ main(int argc, char *argv[])
 	}
 
 	podhdctrl_poll_descriptors(ctx, &pfd, 1);
-	podhdctrl_register_recv_cb(ctx, recv_cb, NULL);
 
 	while (!interrupted) {
+		bool ready;
 		int pollrc = poll(&pfd, 1, 1000);
+		unsigned char buf[8192];
+		int ret;
+		podhdctrl_msg *msg;
 		if (pollrc < 0) {
 			perror("poll");
 			break;
 		}
-		if (pfd.revents & (POLLIN | POLLRDNORM))
-			podhdctrl_handle_events(ctx);
+		if (pfd.revents & (POLLIN | POLLRDNORM)) {
+			ready = podhdctrl_handle_events(ctx);
+			if (!ready)
+				continue;
+
+			/* Peek raw message, dump it if it's not too big */
+			ret = podhdctrl_peek_raw_msg(ctx, buf, sizeof(buf));
+			if (ret < 0) {
+				printf("peek_raw_msg failed: %d\n", ret);
+				break;
+			}
+			if (ret < 32)
+				print_buf(buf, 0, ret);
+
+			/* Receive and parse */
+			ret = podhdctrl_recv_msg(ctx, &msg);
+			if (ret) {
+				printf("recv_msg failed: %d\n", ret);
+				break;
+			}
+			handle_message(msg);
+			podhdctrl_free_msg(msg);
+		}
 		if (pfd.revents & (POLLERR | POLLHUP))
 			break;
 	}

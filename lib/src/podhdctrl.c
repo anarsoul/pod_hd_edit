@@ -96,8 +96,6 @@ podhdctrl_init(podhdctrl_ctx **ctx, const char *devname)
 		goto out;
 	}
 
-	list_init(&(*ctx)->recv_cb);
-
 	(*ctx)->msg_buf = malloc(PODHD_MAX_MSG_SIZE);
 	if (!(*ctx)->msg_buf) {
 		ret = PODHDCTRL_NO_MEMORY;
@@ -120,13 +118,7 @@ out:
 void
 podhdctrl_exit(podhdctrl_ctx *ctx)
 {
-	podhdctrl_recv_cb_entry *it, *tmp;
 	podhdctrl_close_device(ctx);
-
-	list_for_each_entry_safe(it, tmp, &ctx->recv_cb, list, podhdctrl_recv_cb_entry) {
-		list_del(&it->list);
-		free(it);
-	}
 
 	free(ctx->msg_buf);
 	free(ctx);
@@ -145,47 +137,6 @@ podhdctrl_send_raw_msg(podhdctrl_ctx *ctx, unsigned char *buf, int len)
 }
 
 int
-podhdctrl_register_recv_cb(podhdctrl_ctx *ctx, podhdctrl_recv_cb cb, void *userdata)
-{
-	podhdctrl_recv_cb_entry *entry;
-
-	/* Do not add duplicate entries */
-	list_for_each_entry(entry, &ctx->recv_cb, list, podhdctrl_recv_cb_entry) {
-		if (entry->cb == cb && entry->userdata == userdata)
-			return PODHDCTRL_ALREADY_EXISTS;
-	}
-
-	entry = calloc(1, sizeof(*entry));
-	if (!entry)
-		return PODHDCTRL_NO_MEMORY;
-
-	list_init(&entry->list);
-	entry->cb = cb;
-	entry->userdata = userdata;
-	list_add_tail(&ctx->recv_cb, &entry->list);
-
-	return PODHDCTRL_NO_ERROR;
-}
-
-int
-podhdctrl_unregister_recv_cb(podhdctrl_ctx *ctx, podhdctrl_recv_cb cb, void *userdata)
-{
-	int ret = PODHDCTRL_NOT_FOUND;
-	podhdctrl_recv_cb_entry *entry, *tmp;
-
-	list_for_each_entry_safe(entry, tmp, &ctx->recv_cb, list, podhdctrl_recv_cb_entry) {
-		if (entry->cb == cb && entry->userdata == userdata) {
-			list_del(&entry->list);
-			free(entry);
-			ret = PODHDCTRL_NO_ERROR;
-			break;
-		}
-	}
-
-	return ret;
-}
-
-int
 podhdctrl_poll_descriptors(podhdctrl_ctx *ctx, struct pollfd *pfds,
 			   unsigned int space)
 {
@@ -198,11 +149,65 @@ podhdctrl_reset_message(podhdctrl_ctx *ctx)
 	ctx->msg_size = 0;
 }
 
+int
+podhdctrl_peek_raw_msg(podhdctrl_ctx *ctx, unsigned char *buf, int buf_len)
+{
+	if (!podhdctrl_message_complete(ctx))
+		return PODHDCTRL_FAILED;
+
+	if (!buf)
+		return PODHDCTRL_INVALID_ARGUMENT;
+
+	memcpy(buf, ctx->msg_buf, MIN(ctx->msg_size, buf_len));
+
+	return MIN(ctx->msg_size, buf_len);
+}
+
+int
+podhdctrl_recv_raw_msg(podhdctrl_ctx *ctx, unsigned char *buf, int buf_len)
+{
+	int ret;
+
+	ret = podhdctrl_peek_raw_msg(ctx, buf, buf_len);
+
+	if (ret > 0)
+		podhdctrl_reset_message(ctx);
+
+	return ret;
+}
+
+int
+podhdctrl_recv_msg(podhdctrl_ctx *ctx, podhdctrl_msg **msg)
+{
+	if (!msg)
+		return PODHDCTRL_INVALID_ARGUMENT;
+
+	*msg = podhdctrl_parse_message(ctx);
+
+	if (*msg) {
+		podhdctrl_reset_message(ctx);
+		return PODHDCTRL_NO_ERROR;
+	}
+
+	return PODHDCTRL_FAILED;
+}
+
 void
+podhdctrl_free_msg(podhdctrl_msg *msg)
+{
+	free(msg);
+}
+
+
+bool
 podhdctrl_handle_events(podhdctrl_ctx *ctx)
 {
 	unsigned char tmp_buf[512];
 	ssize_t ret;
+
+	/* Caller has to call recv_msg() first before we can proceed */
+	if (podhdctrl_message_complete(ctx))
+		return true;
 
 	do {
 		ret = snd_hwdep_read(ctx->handle, tmp_buf, sizeof(tmp_buf));
@@ -234,10 +239,10 @@ podhdctrl_handle_events(podhdctrl_ctx *ctx)
 			memcpy(ctx->msg_buf + ctx->msg_size, tmp_buf + 4, data_size);
 			ctx->msg_size += data_size;
 
-			if (podhdctrl_message_complete(ctx)) {
-				podhdctrl_parse_message(ctx);
-				podhdctrl_reset_message(ctx);
-			}
+			if (podhdctrl_message_complete(ctx))
+				return true;
 		}
 	} while (ret >= 0);
+
+	return false;
 }
