@@ -18,6 +18,13 @@ enum pod_hd500_effect_pos {
 	POS_POST_AMP,
 };
 
+enum pod_hd500_amp_pos {
+	POS_PRE_MIXER_MONO,
+	POS_PRE_MIXER_1ST_ROW,
+	POS_PRE_MIXER_2ND_ROW,
+	POS_POST_MIXER,
+};
+
 enum pod_hd500_effect_type {
 	FX_TYPE_DYN = 0,
 	FX_TYPE_DIST,
@@ -46,6 +53,8 @@ typedef struct pod_hd500_effect {
 typedef struct pod_hd500_amp {
 	bool enabled;
 	int index;
+	/* Pre-mixer mono, Pre-mixer top/bottom or Post-mixer */
+	int pos;
 	int amp_model;
 	int cab_model;
 } podhd500_amp;
