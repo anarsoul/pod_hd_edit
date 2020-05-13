@@ -34,6 +34,7 @@ enum pod_hd500_effect_type {
 
 typedef struct pod_hd500_effect {
 	bool enabled;
+	int index;
 	int type;
 	int model;
 	/* Pre-amp or Post-amp, 1st or 2nd row */
@@ -44,6 +45,7 @@ typedef struct pod_hd500_effect {
 
 typedef struct pod_hd500_amp {
 	bool enabled;
+	int index;
 	int amp_model;
 	int cab_model;
 } podhd500_amp;

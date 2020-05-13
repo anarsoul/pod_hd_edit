@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
+    <width>911</width>
     <height>600</height>
    </rect>
   </property>
@@ -16,7 +16,7 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_2">
     <item row="0" column="0">
-     <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,2">
+     <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,3">
       <item>
        <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,0,0,0">
         <item>
@@ -30,7 +30,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QComboBox" name="comboBox">
+         <widget class="QComboBox" name="setListComboBox">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
             <horstretch>1</horstretch>
@@ -40,7 +40,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QListView" name="listView">
+         <widget class="QListView" name="setListView">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
             <horstretch>1</horstretch>
@@ -49,14 +49,14 @@
           </property>
           <property name="minimumSize">
            <size>
-            <width>258</width>
+            <width>200</width>
             <height>444</height>
            </size>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="pushButton">
+         <widget class="QPushButton" name="connectButton">
           <property name="text">
            <string>Connect</string>
           </property>
@@ -76,9 +76,12 @@
           </property>
           <property name="minimumSize">
            <size>
-            <width>518</width>
+            <width>666</width>
             <height>133</height>
            </size>
+          </property>
+          <property name="contextMenuPolicy">
+           <enum>Qt::DefaultContextMenu</enum>
           </property>
          </widget>
         </item>
@@ -107,7 +110,7 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>514</width>
+             <width>662</width>
              <height>394</height>
             </rect>
            </property>
@@ -130,7 +133,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>911</width>
      <height>27</height>
     </rect>
    </property>
